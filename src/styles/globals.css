@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: #0d1117;
+    color: #e6edf3;
+    font-family: 'IBM Plex Sans', 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0d1117;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #30363d;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3d444d;
+  }
+
+  /* Electron drag region */
+  .titlebar {
+    -webkit-app-region: drag;
+  }
+
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-accent hover:bg-accent-hover text-bg-primary font-medium px-4 py-2 rounded-md text-sm transition-colors;
+  }
+
+  .btn-secondary {
+    @apply bg-bg-elevated hover:bg-bg-overlay border border-border text-text-primary font-medium px-4 py-2 rounded-md text-sm transition-colors;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-bg-elevated text-text-secondary hover:text-text-primary px-3 py-1.5 rounded-md text-sm transition-colors;
+  }
+
+  .input {
+    @apply bg-bg-elevated border border-border rounded-md px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent transition-colors w-full;
+  }
+
+  .card-surface {
+    @apply bg-bg-surface border border-border rounded-lg;
+  }
+}
