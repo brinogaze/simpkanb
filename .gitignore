@@ -6,3 +6,11 @@ dist/
 *.db-wal
 .env
 .DS_Store
+
+# local/dev-only files
+.claude/
+rodar_appkan
+AI_CONTRACT.md
+ARCHITECTURE.md
+DECISIONS.md
+projectmap.md
