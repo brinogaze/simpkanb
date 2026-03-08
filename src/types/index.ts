@@ -39,10 +39,22 @@ export interface ChecklistItem {
   done: boolean
 }
 
+export interface CardAttachment {
+  id: string
+  name: string
+  mime: string
+  size: number
+  kind: 'image' | 'text' | 'file'
+  data_url: string
+  preview_text?: string
+  created_at: string
+}
+
 export interface Card {
   id: string
   column_id: string
   project_id: string
+  created_by: string | null
   title: string
   description: string | null
   card_type: CardType
@@ -58,7 +70,7 @@ export interface Card {
   notes: string | null
   tags: string[]
   references: string[]
-  attachments: string[]
+  attachments: CardAttachment[]
   checklist: ChecklistItem[]
   position: number
   created_at: string

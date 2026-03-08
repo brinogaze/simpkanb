@@ -8,15 +8,26 @@ import { useBoardStore } from '../../stores/boardStore'
 import { useUiStore } from '../../stores/uiStore'
 import { useProjectStore } from '../../stores/projectStore'
 
+/** Returns a status accent color based on the column's title */
+function getColumnStatusColor(title: string): string {
+  const lower = title.toLowerCase()
+  if (lower.includes('progress') || lower.includes('doing') || lower.includes('active')) return '#58a6ff'
+  if (lower.includes('review') || lower.includes('testing') || lower.includes('qa')) return '#cc88ff'
+  if (lower.includes('done') || lower.includes('complete') || lower.includes('closed')) return '#44ff88'
+  if (lower.includes('blocked') || lower.includes('hold')) return '#ff4444'
+  return '#6e7681' // todo / default
+}
+
 interface Props {
   column: ColumnType
   cards: Card[]
+  ticketNumberById: Record<string, number>
 }
 
-export function Column({ column, cards }: Props) {
+export function Column({ column, cards, ticketNumberById }: Props) {
   const { deleteColumn, createCard, updateColumn } = useBoardStore()
   const { activeProjectId } = useProjectStore()
-  const { selectCard } = useUiStore()
+  const { selectCard, quickCreateOnEmptyClick } = useUiStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [adding, setAdding] = useState(false)
   const [newTitle, setNewTitle] = useState('')
@@ -26,7 +37,7 @@ export function Column({ column, cards }: Props) {
   const titleInputRef = useRef<HTMLInputElement>(null)
   const columnRef = useRef<HTMLDivElement>(null)
 
-  // Ref para quick-create sem stale closure
+  // Ref for quick-create without stale closure
   const quickCreateRef = useRef<() => void>(() => {})
   quickCreateRef.current = () => {
     if (!activeProjectId) return
@@ -43,8 +54,9 @@ export function Column({ column, cards }: Props) {
 
   const { setNodeRef, isOver } = useDroppable({ id: column.id })
 
-  // ── Listener nativo com capture:true ─────────────────────────────────────
+  // Native pointer listener with capture:true to detect clicks on empty column area
   useEffect(() => {
+    if (!quickCreateOnEmptyClick) return
     const el = columnRef.current
     if (!el) return
     const handler = (e: PointerEvent) => {
@@ -63,7 +75,7 @@ export function Column({ column, cards }: Props) {
     }
     el.addEventListener('pointerdown', handler, { capture: true })
     return () => el.removeEventListener('pointerdown', handler, { capture: true })
-  }, [])
+  }, [quickCreateOnEmptyClick])
 
   const handleAddCard = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -95,27 +107,23 @@ export function Column({ column, cards }: Props) {
   }
 
   const isEmpty = cards.length === 0
+  const statusColor = getColumnStatusColor(column.title)
 
   return (
     <div
       ref={columnRef}
       className="flex-shrink-0 w-72 h-full flex flex-col gap-1"
-      onMouseMove={e => {
-        if (addingRef.current) { setIsHoveringEmpty(false); return }
-        const target = e.target as HTMLElement
-        setIsHoveringEmpty(
-          !target.closest('[data-col-header]') &&
-          !target.closest('[data-card]') &&
-          !target.closest('button') &&
-          !target.closest('form')
-        )
-      }}
       onMouseLeave={() => setIsHoveringEmpty(false)}
     >
-
-      {/* ── Header ───────────────────────────────────── */}
-      <div data-col-header className="flex items-center justify-between px-1">
+      {/* ── Header ─────────────────────────────────────── */}
+      <div data-col-header className="flex items-center justify-between px-1 py-0.5">
         <div className="flex items-center gap-2 flex-1 min-w-0">
+          {/* Status color dot */}
+          <div
+            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+            style={{ backgroundColor: statusColor }}
+          />
+
           {editingTitle ? (
             <input
               ref={titleInputRef}
@@ -137,11 +145,15 @@ export function Column({ column, cards }: Props) {
               {column.title}
             </button>
           )}
-          <span className="text-xs text-text-muted bg-bg-elevated border border-border rounded-full px-1.5 py-0.5 font-mono flex-shrink-0">
+
+          {/* Card count badge */}
+          <span className="text-xs text-text-muted bg-bg-elevated border border-border rounded-full px-1.5 py-0.5 font-mono flex-shrink-0 leading-none">
             {cards.length}
           </span>
         </div>
-        <div className="flex items-center gap-1 relative flex-shrink-0">
+
+        {/* Column actions */}
+        <div className="flex items-center gap-0.5 relative flex-shrink-0">
           <button onClick={() => setAdding(true)} className="btn-ghost p-1">
             <Plus size={14} />
           </button>
@@ -168,7 +180,7 @@ export function Column({ column, cards }: Props) {
         </div>
       </div>
 
-      {/* ── Cards (zona droppable) ────────────────────── */}
+      {/* ── Cards (droppable zone) ─────────────────────── */}
       <div
         ref={setNodeRef}
         className={`space-y-2 rounded-lg transition-colors ${
@@ -177,17 +189,25 @@ export function Column({ column, cards }: Props) {
       >
         <SortableContext items={cards.map(c => c.id)} strategy={verticalListSortingStrategy}>
           {cards.map(card => (
-            <KanbanCard key={card.id} card={card} />
+            <KanbanCard key={card.id} card={card} ticketNumber={ticketNumberById[card.id]} />
           ))}
         </SortableContext>
       </div>
 
-      {/* ── Indicador visual área vazia (pointer-events:none) ── */}
+      {/* ── Empty column drop hint ─────────────────────── */}
       {isEmpty && !adding && (
-        <div
-          style={{ pointerEvents: 'none' }}
+        <button
+          type="button"
+          data-empty-create="true"
+          onMouseEnter={() => setIsHoveringEmpty(true)}
+          onMouseLeave={() => setIsHoveringEmpty(false)}
+          onClick={() => quickCreateRef.current()}
           className={`h-24 flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-all ${
-            isHoveringEmpty ? 'border-accent bg-accent/5' : 'border-border'
+            isOver
+              ? 'border-accent bg-accent/5'
+              : isHoveringEmpty
+                ? 'border-accent/50 bg-accent/5'
+                : 'border-border'
           }`}
         >
           <div className={`flex items-center justify-center rounded-full transition-all ${
@@ -199,12 +219,12 @@ export function Column({ column, cards }: Props) {
             />
           </div>
           <span className={`text-[11px] transition-colors ${isHoveringEmpty ? 'text-accent' : 'text-text-muted'}`}>
-            clique para adicionar
+            {isOver ? 'Drop to change status' : 'click to add'}
           </span>
-        </div>
+        </button>
       )}
 
-      {/* ── Form de adicionar ─────────────────────────── */}
+      {/* ── Add card form ──────────────────────────────── */}
       {adding && (
         <form onSubmit={handleAddCard} className="space-y-2">
           <textarea
@@ -229,7 +249,7 @@ export function Column({ column, cards }: Props) {
         </form>
       )}
 
-      {/* ── Add card (quando tem cards) ───────────────── */}
+      {/* ── Add card button (when column has cards) ─────── */}
       {!adding && !isEmpty && (
         <button
           onClick={() => setAdding(true)}
@@ -240,10 +260,8 @@ export function Column({ column, cards }: Props) {
         </button>
       )}
 
-      {/* ── Espaçador — preenche a altura restante da coluna ── */}
-      {/* O native listener do wrapper captura cliques aqui também */}
+      {/* Spacer — fills remaining column height */}
       <div className="flex-1" />
-
     </div>
   )
 }

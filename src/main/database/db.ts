@@ -50,6 +50,7 @@ function runMigrations(): void {
       id TEXT PRIMARY KEY,
       column_id TEXT NOT NULL REFERENCES columns(id) ON DELETE CASCADE,
       project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      created_by TEXT,
       title TEXT NOT NULL,
       description TEXT,
       card_type TEXT DEFAULT 'task',
@@ -72,4 +73,14 @@ function runMigrations(): void {
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
   `)
+
+  ensureCardsCreatedBy()
+}
+
+function ensureCardsCreatedBy(): void {
+  const cols = getDb().prepare("PRAGMA table_info(cards)").all() as Array<{ name: string }>
+  const hasCreatedBy = cols.some(c => c.name === 'created_by')
+  if (!hasCreatedBy) {
+    getDb().exec('ALTER TABLE cards ADD COLUMN created_by TEXT')
+  }
 }

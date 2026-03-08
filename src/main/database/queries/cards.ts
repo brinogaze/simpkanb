@@ -16,12 +16,12 @@ export function createCard(data: Record<string, unknown>) {
 
   db.prepare(`
     INSERT INTO cards (
-      id, column_id, project_id, title, description, card_type,
+      id, column_id, project_id, created_by, title, description, card_type,
       severity, cvss_score, cvss_vector, cwe_id, owasp_category,
       affected_url, affected_parameter, proof_of_concept, remediation,
       notes, tags, card_refs, attachments, checklist, position
     ) VALUES (
-      @id, @column_id, @project_id, @title, @description, @card_type,
+      @id, @column_id, @project_id, @created_by, @title, @description, @card_type,
       @severity, @cvss_score, @cvss_vector, @cwe_id, @owasp_category,
       @affected_url, @affected_parameter, @proof_of_concept, @remediation,
       @notes, @tags, @card_refs, @attachments, @checklist, @position
@@ -30,6 +30,7 @@ export function createCard(data: Record<string, unknown>) {
     id,
     column_id: data.column_id,
     project_id: data.project_id,
+    created_by: data.created_by || null,
     title: data.title,
     description: data.description || null,
     card_type: data.card_type || 'task',

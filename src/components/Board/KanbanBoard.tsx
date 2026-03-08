@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   DndContext, DragEndEvent, DragStartEvent,
   PointerSensor, useSensor, useSensors, closestCorners, DragOverlay,
 } from '@dnd-kit/core'
-import { Plus, ArrowLeft, Search } from 'lucide-react'
+import { Plus, Search, Share2, Filter, Eye, ChevronRight, LayoutGrid } from 'lucide-react'
 import { useBoardStore } from '../../stores/boardStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { useUiStore } from '../../stores/uiStore'
@@ -32,6 +32,19 @@ export function KanbanBoard() {
     if (searchQuery && !c.title.toLowerCase().includes(searchQuery.toLowerCase())) return false
     return true
   })
+
+  const ticketNumberById = useMemo(() => {
+    const ordered = cards
+      .slice()
+      .sort((a, b) => {
+        const createdDiff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        if (createdDiff !== 0) return createdDiff
+        return a.id.localeCompare(b.id)
+      })
+    const map: Record<string, number> = {}
+    ordered.forEach((c, i) => { map[c.id] = i + 1 })
+    return map
+  }, [cards])
 
   const getColumnCards = (colId: string) =>
     filteredCards.filter(c => c.column_id === colId).sort((a, b) => a.position - b.position)
@@ -72,42 +85,62 @@ export function KanbanBoard() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-bg-surface flex-shrink-0">
-        <button
-          onClick={() => { setView('dashboard'); setActiveProject(null) }}
-          className="btn-ghost flex items-center gap-1.5 text-text-muted"
-        >
-          <ArrowLeft size={14} />
-        </button>
-
-        {project && (
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: project.color }} />
-            <span className="font-medium text-sm text-text-primary">{project.name}</span>
-            {project.client && <span className="text-xs text-text-muted">— {project.client}</span>}
-          </div>
-        )}
+      {/* ── Brandby-style toolbar ─────────────────────── */}
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-bg-surface/70 backdrop-blur-xl flex-shrink-0">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-1 text-sm min-w-0">
+          <button
+            onClick={() => { setView('dashboard'); setActiveProject(null) }}
+            className="text-text-muted hover:text-text-primary transition-colors text-xs font-medium truncate max-w-32"
+          >
+            {project?.name || 'Projects'}
+          </button>
+          <ChevronRight size={12} className="text-text-muted flex-shrink-0" />
+          <span className="text-xs font-medium text-text-primary flex items-center gap-1.5 flex-shrink-0">
+            <LayoutGrid size={13} className="text-text-muted" />
+            Board
+          </span>
+        </div>
 
         <div className="flex-1" />
 
-        <div className="relative">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search cards..."
-            className="input pl-8 py-1.5 text-xs w-48"
-          />
-        </div>
+        {/* Action buttons */}
+        <div className="flex items-center gap-1">
+          <button className="btn-ghost py-1 px-2.5 text-xs flex items-center gap-1.5 text-text-secondary hover:text-accent">
+            <Share2 size={13} />
+            <span className="hidden sm:inline">Share</span>
+          </button>
+          <button className="btn-ghost py-1 px-2.5 text-xs flex items-center gap-1.5 text-text-secondary hover:text-accent">
+            <Filter size={13} />
+            <span className="hidden sm:inline">Filter</span>
+          </button>
+          <button className="btn-ghost py-1 px-2.5 text-xs flex items-center gap-1.5 text-text-secondary hover:text-accent">
+            <Eye size={13} />
+            <span className="hidden sm:inline">View</span>
+          </button>
 
-        <button onClick={handleAddColumn} className="btn-secondary flex items-center gap-1.5 text-xs">
-          <Plus size={13} />
-          Add Column
-        </button>
+          {/* Search */}
+          <div className="relative">
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search cards..."
+              className="input pl-7 py-1.5 text-xs w-40"
+            />
+          </div>
+
+          <button
+            onClick={handleAddColumn}
+            className="btn-secondary flex items-center gap-1.5 text-xs py-1.5 px-3 ml-1"
+          >
+            <Plus size={13} />
+            Column
+          </button>
+        </div>
       </div>
 
-      {/* Board — full width now, no side panel pushing layout */}
+      {/* ── Board ─────────────────────────────────────── */}
       <div className="flex-1 overflow-x-auto overflow-y-hidden p-4">
         <DndContext
           sensors={sensors}
@@ -121,6 +154,7 @@ export function KanbanBoard() {
                 key={col.id}
                 column={col}
                 cards={getColumnCards(col.id)}
+                ticketNumberById={ticketNumberById}
               />
             ))}
           </div>
@@ -128,14 +162,14 @@ export function KanbanBoard() {
           <DragOverlay>
             {activeCard && (
               <div className="rotate-1 opacity-90">
-                <KanbanCard card={activeCard} />
+                <KanbanCard card={activeCard} ticketNumber={ticketNumberById[activeCard.id]} />
               </div>
             )}
           </DragOverlay>
         </DndContext>
       </div>
 
-      {/* Card modal — rendered as overlay above everything */}
+      {/* Card detail modal — overlaid above everything */}
       {selectedCard && <CardDetailPanel card={selectedCard} />}
     </div>
   )

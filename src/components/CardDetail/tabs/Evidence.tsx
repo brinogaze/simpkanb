@@ -4,6 +4,7 @@ import { useBoardStore } from '../../../stores/boardStore'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Eye, Edit3, Plus, X } from 'lucide-react'
+import { AttachmentSection } from '../AttachmentSection'
 
 interface Props { card: Card }
 
@@ -84,6 +85,15 @@ export function EvidenceTab({ card }: Props) {
           {card.references.map((ref, i) => (
             <div key={i} className="flex items-center gap-2 bg-bg-elevated border border-border rounded px-3 py-1.5">
               <span className="flex-1 text-xs font-mono text-accent truncate">{ref}</span>
+              <a
+                href={ref}
+                target="_blank"
+                rel="noreferrer noopener"
+                onClick={e => e.stopPropagation()}
+                className="text-[10px] text-accent underline decoration-dotted"
+              >
+                abrir
+              </a>
               <button
                 onClick={() => update('references', card.references.filter((_, j) => j !== i))}
                 className="text-text-muted hover:text-severity-critical"
@@ -106,6 +116,8 @@ export function EvidenceTab({ card }: Props) {
           </button>
         </div>
       </div>
+
+      <AttachmentSection card={card} />
     </div>
   )
 }

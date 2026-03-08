@@ -33,6 +33,10 @@ const SECTIONS: {
 ]
 
 const COLORS = ['#58a6ff', '#f78166', '#3fb950', '#d2a8ff', '#ffa657', '#79c0ff', '#56d364']
+type BoardCategory = 'pentest' | 'general'
+
+const PENTEST_TYPES = SECTIONS.find(s => s.label === 'Segurança / Pentest')!.types
+const GENERAL_TYPES = SECTIONS.find(s => s.label === 'Geral')!.types
 
 export function NewProjectModal() {
   const { createProject, setActiveProject } = useProjectStore()
@@ -40,11 +44,13 @@ export function NewProjectModal() {
   const [name, setName] = useState('')
   const [context, setContext] = useState('')
   const [type, setType] = useState<ProjectType>('personal')
+  const [category, setCategory] = useState<BoardCategory>('general')
   const [color, setColor] = useState(COLORS[0])
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
 
   const isPentest = isPentestProject(type)
+  const visibleTypes = category === 'pentest' ? PENTEST_TYPES : GENERAL_TYPES
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,32 +84,62 @@ export function NewProjectModal() {
           />
         </div>
 
+        <div>
+          <label className="block text-xs text-text-secondary mb-1.5">Categoria do board</label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setCategory('pentest')
+                if (!isPentestProject(type)) setType('web')
+              }}
+              className={`px-3 py-2 rounded-lg border text-xs transition-colors ${
+                category === 'pentest'
+                  ? 'border-accent bg-accent/10 text-text-primary'
+                  : 'border-border bg-bg-elevated text-text-secondary hover:border-border-emphasis'
+              }`}
+            >
+              Seguranca / Pentest
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCategory('general')
+                if (isPentestProject(type)) setType('personal')
+              }}
+              className={`px-3 py-2 rounded-lg border text-xs transition-colors ${
+                category === 'general'
+                  ? 'border-accent bg-accent/10 text-text-primary'
+                  : 'border-border bg-bg-elevated text-text-secondary hover:border-border-emphasis'
+              }`}
+            >
+              Geral
+            </button>
+          </div>
+        </div>
+
         {/* Category selector */}
         <div className="space-y-3">
-          {SECTIONS.map(section => (
-            <div key={section.label}>
-              <p className="text-[10px] uppercase tracking-widest text-text-muted font-mono mb-1.5">
-                {section.label}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {section.types.map(t => (
-                  <button
-                    key={t.value}
-                    type="button"
-                    onClick={() => setType(t.value)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors ${
-                      type === t.value
-                        ? 'border-accent bg-accent/10 text-text-primary'
-                        : 'border-border bg-bg-elevated text-text-secondary hover:border-border-emphasis'
-                    }`}
-                  >
-                    <span>{t.icon}</span>
-                    <span>{t.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
+          <p className="text-[10px] uppercase tracking-widest text-text-muted font-mono mb-1.5">
+            {category === 'pentest' ? 'Segurança / Pentest' : 'Geral'}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {visibleTypes.map(t => (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => setType(t.value)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors ${
+                  type === t.value
+                    ? 'border-accent bg-accent/10 text-text-primary'
+                    : 'border-border bg-bg-elevated text-text-secondary hover:border-border-emphasis'
+                }`}
+              >
+                <span>{t.icon}</span>
+                <span>{t.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Contextual label: Client for pentest, optional context for general */}

@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { X, Trash2, MoveRight, Calendar, Clock, ExternalLink } from 'lucide-react'
 import type { Card } from '../../types'
+import { isPentestProject } from '../../types'
 import { useBoardStore } from '../../stores/boardStore'
 import { useUiStore } from '../../stores/uiStore'
+import { useProjectStore } from '../../stores/projectStore'
 import { SeverityBadge } from '../shared/SeverityBadge'
 import { OverviewTab } from './tabs/Overview'
 import { EvidenceTab } from './tabs/Evidence'
 import { NotesTab } from './tabs/Notes'
+import { parseTag } from '../../utils/tags'
 
 type Tab = 'overview' | 'evidence' | 'notes'
 
@@ -23,10 +26,13 @@ const CARD_TYPE_LABELS: Record<string, string> = {
 export function CardDetailPanel({ card }: Props) {
   const { updateCard, deleteCard, columns } = useBoardStore()
   const { selectCard } = useUiStore()
+  const { projects } = useProjectStore()
   const [tab, setTab] = useState<Tab>('overview')
   const [editingTitle, setEditingTitle] = useState(() => card.title === 'Novo card')
   const [title, setTitle] = useState(card.title)
   const titleRef = useRef<HTMLTextAreaElement>(null)
+  const project = projects.find(p => p.id === card.project_id)
+  const pentestBoard = project ? isPentestProject(project.type) : false
 
   useEffect(() => {
     setTitle(card.title)
@@ -69,17 +75,22 @@ export function CardDetailPanel({ card }: Props) {
   const currentColumn = columns.find(c => c.id === card.column_id)
   const otherColumns = columns.filter(c => c.id !== card.column_id)
 
-  const TABS: { id: Tab; label: string }[] = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'evidence', label: 'Evidence / PoC' },
-    { id: 'notes', label: 'Notes & Checklist' },
-  ]
+  const TABS: { id: Tab; label: string }[] = pentestBoard
+    ? [
+      { id: 'overview', label: 'Overview' },
+      { id: 'evidence', label: 'Evidence / PoC' },
+      { id: 'notes', label: 'Notes & Checklist' },
+    ]
+    : [
+      { id: 'overview', label: 'Overview' },
+      { id: 'notes', label: 'Notes & Checklist' },
+    ]
 
   return (
     /* Backdrop */
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/72"
         onClick={() => selectCard(null)}
       />
 
@@ -166,11 +177,22 @@ export function CardDetailPanel({ card }: Props) {
                     {card.cwe_id}
                   </span>
                 )}
-                {card.tags.slice(0, 4).map(t => (
-                  <span key={t} className="text-[10px] font-mono bg-bg-overlay border border-border rounded px-1.5 py-0.5 text-text-muted">
-                    {t}
-                  </span>
-                ))}
+                {card.tags.slice(0, 4).map(t => {
+                  const parsed = parseTag(t)
+                  return (
+                    <span
+                      key={t}
+                      className="text-[10px] font-mono border rounded px-1.5 py-0.5 text-text-muted"
+                      style={parsed.color ? {
+                        backgroundColor: `${parsed.color}22`,
+                        borderColor: parsed.color,
+                        color: parsed.color,
+                      } : undefined}
+                    >
+                      {parsed.label}
+                    </span>
+                  )
+                })}
               </div>
             </div>
 
@@ -228,7 +250,7 @@ export function CardDetailPanel({ card }: Props) {
         {/* ── Body ──────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto min-h-0">
           {tab === 'overview' && <OverviewTab card={card} />}
-          {tab === 'evidence' && <EvidenceTab card={card} />}
+          {tab === 'evidence' && pentestBoard && <EvidenceTab card={card} />}
           {tab === 'notes' && <NotesTab card={card} />}
         </div>
       </div>

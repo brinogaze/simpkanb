@@ -1,13 +1,51 @@
 import { create } from 'zustand'
-import type { Column, Card, ChecklistItem } from '../types'
+import type { Column, Card, ChecklistItem, CardAttachment } from '../types'
+import { useUiStore } from './uiStore'
+
+function normalizeAttachments(input: unknown): CardAttachment[] {
+  if (!Array.isArray(input)) return []
+
+  // Backward compatibility: old saves can still be string[].
+  if (input.every(a => typeof a === 'string')) {
+    return input.map((value, i) => ({
+      id: `legacy-${i}`,
+      name: `attachment-${i + 1}`,
+      mime: 'application/octet-stream',
+      size: 0,
+      kind: 'file',
+      data_url: value,
+      created_at: new Date(0).toISOString(),
+    }))
+  }
+
+  return input
+    .filter(a => typeof a === 'object' && a !== null)
+    .map((a) => {
+      const x = a as Partial<CardAttachment>
+      return {
+        id: x.id || crypto.randomUUID(),
+        name: x.name || 'attachment',
+        mime: x.mime || 'application/octet-stream',
+        size: typeof x.size === 'number' ? x.size : 0,
+        kind: x.kind || 'file',
+        data_url: x.data_url || '',
+        preview_text: x.preview_text,
+        created_at: x.created_at || new Date().toISOString(),
+      }
+    })
+    .filter(a => a.data_url)
+}
 
 function parseCard(row: Record<string, unknown>): Card {
   const refs = row.card_refs ?? row.references ?? []
+  const rawAttachments = typeof row.attachments === 'string'
+    ? JSON.parse(row.attachments as string)
+    : (row.attachments ?? [])
   return {
     ...row,
     tags: typeof row.tags === 'string' ? JSON.parse(row.tags as string) : (row.tags ?? []),
     references: typeof refs === 'string' ? JSON.parse(refs as string) : refs,
-    attachments: typeof row.attachments === 'string' ? JSON.parse(row.attachments as string) : (row.attachments ?? []),
+    attachments: normalizeAttachments(rawAttachments),
     checklist: typeof row.checklist === 'string' ? JSON.parse(row.checklist as string) : (row.checklist ?? []),
   } as Card
 }
@@ -70,7 +108,8 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
   },
 
   createCard: async (data) => {
-    const row = await window.api.cards.create(data)
+    const profileId = useUiStore.getState().profile.id
+    const row = await window.api.cards.create({ ...data, created_by: profileId })
     const card = parseCard(row as Record<string, unknown>)
     set(s => ({ cards: [...s.cards, card] }))
     return card

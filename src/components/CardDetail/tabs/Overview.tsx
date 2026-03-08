@@ -8,6 +8,7 @@ import { CvssCalculator } from '../CvssCalculator'
 import { TagInput } from '../../shared/TagInput'
 import { ChevronDown } from 'lucide-react'
 import { FINDING_TEMPLATES } from '../../../data/findingTemplates'
+import { AttachmentSection } from '../AttachmentSection'
 
 // ── Pentest constants ────────────────────────────────────────────────────────
 const PENTEST_CARD_TYPES: CardType[] = ['task', 'finding', 'recon', 'exploit', 'note']
@@ -119,6 +120,8 @@ export function OverviewTab({ card }: Props) {
             onChange={tags => update('tags', tags)}
           />
         </div>
+
+        <AttachmentSection card={card} />
       </div>
     )
   }
@@ -274,6 +277,8 @@ export function OverviewTab({ card }: Props) {
           onChange={tags => update('tags', tags)}
         />
       </div>
+
+      <AttachmentSection card={card} />
     </div>
   )
 }

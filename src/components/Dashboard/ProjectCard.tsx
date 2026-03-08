@@ -52,7 +52,7 @@ export function ProjectCard({ project, cards, onClick, onDelete }: Props) {
 
   return (
     <div
-      className="card-surface p-4 hover:border-border-emphasis transition-all cursor-pointer group relative"
+      className="card-surface p-4 hover:border-border-emphasis hover:-translate-y-0.5 transition-all cursor-pointer group relative"
       style={{ borderTopColor: project.color, borderTopWidth: 2 }}
       onClick={onClick}
     >
@@ -66,7 +66,7 @@ export function ProjectCard({ project, cards, onClick, onDelete }: Props) {
       <div className="pr-6">
         <div className="flex items-center gap-2 mb-0.5">
           <span className="text-base">{TYPE_ICONS[project.type] ?? '📋'}</span>
-          <h3 className="font-semibold text-text-primary text-sm truncate">{project.name}</h3>
+          <h3 className="font-semibold text-text-primary text-sm truncate tracking-wide">{project.name}</h3>
         </div>
         {project.client && (
           <p className="text-xs text-text-muted mb-2 ml-6">{project.client}</p>

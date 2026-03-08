@@ -34,8 +34,8 @@ export function Dashboard() {
           <div className="flex items-center gap-3">
             <Shield size={24} className="text-accent" />
             <div>
-              <h1 className="text-xl font-semibold text-text-primary">PentBoard</h1>
-              <p className="text-xs text-text-muted">Engagements</p>
+              <h1 className="text-2xl font-extrabold tracking-wide text-text-primary">SimpKanb</h1>
+              <p className="text-xs uppercase tracking-[0.18em] text-text-muted">Engagements</p>
             </div>
           </div>
           <button onClick={() => setNewProjectModal(true)} className="btn-primary flex items-center gap-2">
